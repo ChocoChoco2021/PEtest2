@@ -85,23 +85,59 @@ def load_num_data():
 
 
 def main():
-    if "page" not in st.session_state:
-        st.session_state.page = "vis"
+    # if "page" not in st.session_state:
+    #     st.session_state.page = "vis"
 
-    st.sidebar.markdown("## ページ切り替え")
+    # ログをとるときのみコメントを外す
+    # If username is already initialized, don't do anything
+    if 'username' not in st.session_state or st.session_state.username == 'default':
+        st.session_state.username = 'default'
+        input_name()
+        st.stop()
+    if 'username' not in st.session_state:
+        st.session_state.username = 'test'
+
+    # 個別のログをとるときはinputを受け取るので以下は不要
+    # st.session_state.username = 'test'   
+    # if 'page' not in st.session_state:
+    #     st.session_state.page = 'input_name' # usernameつける時こっち
+
+
     # --- page選択ラジオボタン
-    page = st.sidebar.radio("ページ選択", ("データ可視化", "単回帰分析", "重回帰分析"))
+    st.sidebar.markdown("## ページ切り替え")
+    st.session_state.page = st.sidebar.radio("ページ選択", ("データ可視化", "単回帰分析", "重回帰分析"))
 
     # --- page振り分け
-    if page == "データ可視化":
+    if st.session_state.page == 'input_name':
+        input_name()
+    elif st.session_state.page == "データ可視化":
         st.session_state.page = "vis"
         vis()
-    elif page == "単回帰分析":
+    elif st.session_state.page == "単回帰分析":
         st.session_state.page = "lr"
         lr()
-    elif page == "重回帰分析":
+    elif st.session_state.page == "重回帰分析":
         st.session_state.page = "lr"
         multi_lr()
+
+# ---------------- usernameの登録 ----------------------------------
+def input_name():
+    print("input name")
+    # Input username
+    with st.form("my_form"):
+        inputname = st.text_input('番号', placeholder='ここに番号を入力')
+        submitted = st.form_submit_button("Go!!")
+
+        # usernameが未入力でないか確認
+        if inputname == "":
+            submitted = False
+
+        # Goボタンが押されたときの処理
+        if submitted:
+            st.session_state.username = inputname
+            st.session_state.page = 'deal_data'
+            st.write("名前: ", inputname)
+            st.text("↑ 自分の番号であることを確認したら、もう一度 Go! をクリック")
 
 
 # ---------------- グラフで可視化 :  各グラフを選択する ----------------------------------
