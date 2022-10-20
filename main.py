@@ -1,20 +1,20 @@
-# import datetime
+import datetime
 
-# import google_auth_httplib2
-# import httplib2
+import google_auth_httplib2
+import httplib2
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-# from google.oauth2 import service_account
-# from googleapiclient.discovery import build
-# from googleapiclient.http import HttpRequest
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import HttpRequest
 from sklearn.linear_model import LinearRegression
 
 import data as d
 
-# SCOPE = "https://www.googleapis.com/auth/spreadsheets"
-# SHEET_ID = "1b0ODG_mkvXdOwq8uEnQfyCi2PYZxGexyUbV6q5w-chc"
-SHEET_NAME = "db"
+SCOPE = "https://www.googleapis.com/auth/spreadsheets"
+SHEET_ID = "1Sx0MFwfZdgam9cBHzgo97XDqArOMz7czS4BrX7niPIc"
+SHEET_NAME = "multi1"
 X_COLS = [
     "身長",
     "体重",
@@ -36,38 +36,38 @@ target_df = pd.DataFrame(
 )
 
 
-# @st.experimental_singleton()
-# def connect_to_gsheet():
-#     # Create a connection object
-#     credentials = service_account.Credentials.from_service_account_info(
-#         st.secrets["gcp_service_account"], scopes=[SCOPE]
-#     )
+@st.experimental_singleton()
+def connect_to_gsheet():
+    # Create a connection object
+    credentials = service_account.Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"], scopes=[SCOPE]
+    )
 
-#     # Create a new Http() object for every request
-#     def build_request(http, *args, **kwargs):
-#         new_http = google_auth_httplib2.AuthorizedHttp(
-#             credentials, http=httplib2.Http()
-#         )
+    # Create a new Http() object for every request
+    def build_request(http, *args, **kwargs):
+        new_http = google_auth_httplib2.AuthorizedHttp(
+            credentials, http=httplib2.Http()
+        )
 
-#         return HttpRequest(new_http, *args, **kwargs)
+        return HttpRequest(new_http, *args, **kwargs)
 
-#     authorized_http = google_auth_httplib2.AuthorizedHttp(
-#         credentials, http=httplib2.Http()
-#     )
+    authorized_http = google_auth_httplib2.AuthorizedHttp(
+        credentials, http=httplib2.Http()
+    )
 
-#     service = build("sheets", "v4", requestBuilder=build_request, http=authorized_http)
-#     gsheet_connector = service.spreadsheets()
+    service = build("sheets", "v4", requestBuilder=build_request, http=authorized_http)
+    gsheet_connector = service.spreadsheets()
 
-#     return gsheet_connector
+    return gsheet_connector
 
 
-# def add_row_to_gsheet(gsheet_connector, row):
-#     gsheet_connector.values().append(
-#         spreadsheetId=SHEET_ID,
-#         range=f"{SHEET_NAME}!A:E",
-#         body=dict(values=row),
-#         valueInputOption="USER_ENTERED",
-#     ).execute()
+def add_row_to_gsheet(gsheet_connector, row):
+    gsheet_connector.values().append(
+        spreadsheetId=SHEET_ID,
+        range=f"{SHEET_NAME}!A:F",
+        body=dict(values=row),
+        valueInputOption="USER_ENTERED",
+    ).execute()
 
 
 @st.cache
@@ -90,25 +90,24 @@ def main():
 
     # ログをとるときのみコメントを外す
     # If username is already initialized, don't do anything
-    if 'username' not in st.session_state or st.session_state.username == 'default':
-        st.session_state.username = 'default'
+    if "username" not in st.session_state or st.session_state.username == "default":
+        st.session_state.username = "default"
         input_name()
         st.stop()
-    if 'username' not in st.session_state:
-        st.session_state.username = 'test'
+    if "username" not in st.session_state:
+        st.session_state.username = "test"
 
     # 個別のログをとるときはinputを受け取るので以下は不要
-    # st.session_state.username = 'test'   
+    # st.session_state.username = 'test'
     # if 'page' not in st.session_state:
     #     st.session_state.page = 'input_name' # usernameつける時こっち
-
 
     # --- page選択ラジオボタン
     st.sidebar.markdown("## ページ切り替え")
     st.session_state.page = st.sidebar.radio("ページ選択", ("データ可視化", "単回帰分析", "重回帰分析"))
 
     # --- page振り分け
-    if st.session_state.page == 'input_name':
+    if st.session_state.page == "input_name":
         input_name()
     elif st.session_state.page == "データ可視化":
         st.session_state.page = "vis"
@@ -120,12 +119,12 @@ def main():
         st.session_state.page = "lr"
         multi_lr()
 
+
 # ---------------- usernameの登録 ----------------------------------
 def input_name():
-    print("input name")
     # Input username
     with st.form("my_form"):
-        inputname = st.text_input('番号', placeholder='ここに番号を入力')
+        inputname = st.text_input("番号", placeholder="ここに番号を入力")
         submitted = st.form_submit_button("Go!!")
 
         # usernameが未入力でないか確認
@@ -135,7 +134,7 @@ def input_name():
         # Goボタンが押されたときの処理
         if submitted:
             st.session_state.username = inputname
-            st.session_state.page = 'deal_data'
+            st.session_state.page = "deal_data"
             st.write("名前: ", inputname)
             st.text("↑ 自分の番号であることを確認したら、もう一度 Go! をクリック")
 
@@ -184,11 +183,43 @@ def vis():
         # グラフ描画
         st.plotly_chart(fig, use_container_width=True)
 
+        # ログを記録
+        add_row_to_gsheet(
+            gsheet_connector,
+            [
+                [
+                    datetime.datetime.now(
+                        datetime.timezone(datetime.timedelta(hours=9))
+                    ).strftime("%Y-%m-%d %H:%M:%S"),
+                    st.session_state.username,
+                    "散布図",
+                    x_label,
+                    y_label,
+                ]
+            ],
+        )
+
     # ヒストグラム
     elif graph == "ヒストグラム":
         hist_val = st.selectbox("変数を選択", X_COLS)
         fig = px.histogram(score, x=hist_val)
         st.plotly_chart(fig, use_container_width=True)
+
+        # ログを記録
+        add_row_to_gsheet(
+            gsheet_connector,
+            [
+                [
+                    datetime.datetime.now(
+                        datetime.timezone(datetime.timedelta(hours=9))
+                    ).strftime("%Y-%m-%d %H:%M:%S"),
+                    st.session_state.username,
+                    "ヒストグラム",
+                    hist_val,
+                    "-",
+                ]
+            ],
+        )
 
     # 箱ひげ図
     elif graph == "箱ひげ図":
@@ -205,6 +236,22 @@ def vis():
         with right:
             fig = px.box(full_data, x="性別", y=box_val_y)
             st.plotly_chart(fig, use_container_width=True)
+
+        # ログを記録
+        add_row_to_gsheet(
+            gsheet_connector,
+            [
+                [
+                    datetime.datetime.now(
+                        datetime.timezone(datetime.timedelta(hours=9))
+                    ).strftime("%Y-%m-%d %H:%M:%S"),
+                    st.session_state.username,
+                    "箱ひげ図",
+                    box_val_y,
+                    "-",
+                ]
+            ],
+        )
 
 
 # ---------------- 単回帰分析 ----------------------------------
@@ -260,19 +307,20 @@ def lr():
             y_pred = model_lr.predict(X_test)
 
             # ログを記録
-            # add_row_to_gsheet(
-            #     gsheet_connector,
-            #     [
-            #         [
-            #             datetime.datetime.now(
-            #                 datetime.timezone(datetime.timedelta(hours=9))
-            #             ).strftime("%Y-%m-%d %H:%M:%S"),
-            #             "単回帰分析",
-            #             y_label,
-            #             x_label,
-            #         ]
-            #     ],
-            # )
+            add_row_to_gsheet(
+                gsheet_connector,
+                [
+                    [
+                        datetime.datetime.now(
+                            datetime.timezone(datetime.timedelta(hours=9))
+                        ).strftime("%Y-%m-%d %H:%M:%S"),
+                        st.session_state.username,
+                        "単回帰分析",
+                        y_label,
+                        x_label,
+                    ]
+                ],
+            )
 
             # グラフの描画
             fig = px.scatter(
@@ -350,6 +398,7 @@ def multi_lr():
                 #             datetime.datetime.now(
                 #                 datetime.timezone(datetime.timedelta(hours=9))
                 #             ).strftime("%Y-%m-%d %H:%M:%S"),
+                #              st.session_state.username,
                 #             "重回帰分析",
                 #             y_label,
                 #             "_".join(x_labels),
@@ -407,5 +456,5 @@ def multi_lr():
 
 
 #### main contents
-# gsheet_connector = connect_to_gsheet()
+gsheet_connector = connect_to_gsheet()
 main()
