@@ -2,8 +2,6 @@
 
 # import google_auth_httplib2
 # import httplib2
-from tkinter import E
-
 import pandas as pd
 import plotly.express as px
 import streamlit as st
