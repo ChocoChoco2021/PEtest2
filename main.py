@@ -1,13 +1,15 @@
-import datetime
+# import datetime
 
-import google_auth_httplib2
-import httplib2
+# import google_auth_httplib2
+# import httplib2
+from tkinter import E
+
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from googleapiclient.http import HttpRequest
+# from google.oauth2 import service_account
+# from googleapiclient.discovery import build
+# from googleapiclient.http import HttpRequest
 from sklearn.linear_model import LinearRegression
 
 import data as d
@@ -30,6 +32,10 @@ X_COLS = [
 ]
 TEST_START_INDEX = 400
 TEST_END_INDEX = 420
+# 花子のデータ：身長, 体重, 座高, 握力, 上体起こし, 長座体前屈, 反復横跳び, シャトルラン, 50ｍ走, 立ち幅跳び, ハンドボール投げ
+target_df = pd.DataFrame(
+    [[162.8, 49.7, 87.3, 23, 26, 41, 44, 67, 8.3, 0.0, 14]], columns=X_COLS
+)
 
 
 # @st.experimental_singleton()
@@ -169,7 +175,7 @@ def vis():
 
 # ---------------- 単回帰分析 ----------------------------------
 def lr():
-    st.title("単回帰分析を使って予測してみよう！")
+    st.title("単回帰分析による予測")
     df = load_full_data()
 
     st.sidebar.markdown("## まずはタイプ 1から！")
@@ -247,7 +253,7 @@ def lr():
 
 # ---------------- 重回帰分析 ----------------------------------
 def multi_lr():
-    st.title("重回帰分析を使って予測してみよう！")
+    st.title("重回帰分析による予測")
     df = load_full_data()
 
     st.sidebar.markdown("## まずはタイプ 1から！")
@@ -292,32 +298,78 @@ def multi_lr():
         submitted_multi = st.form_submit_button("重回帰分析スタート")
 
         if submitted_multi:
-            # モデルの構築
-            model_lr = LinearRegression()
-            model_lr.fit(X_train, y_train)
-            y_pred = model_lr.predict(X_test)
+            ## エラー対応
+            if len(x_labels) == 0:
+                st.markdown("### 予測に使いたい変数を1つ以上選んでください！")
 
-            # ログを記録
-            # add_row_to_gsheet(
-            #     gsheet_connector,
-            #     [
-            #         [
-            #             datetime.datetime.now(
-            #                 datetime.timezone(datetime.timedelta(hours=9))
-            #             ).strftime("%Y-%m-%d %H:%M:%S"),
-            #             "重回帰分析",
-            #             y_label,
-            #             "_".join(x_labels),
-            #         ]
-            #     ],
-            # )
+            else:
+                # モデルの構築
+                model_lr = LinearRegression()
+                model_lr.fit(X_train, y_train)
+                y_pred = model_lr.predict(X_test)
 
-            # グラフの描画
-            plot_y = list(map(lambda y: y[0], y_pred))
-            fig = px.scatter(
-                x=y_test[y_label].values, y=plot_y, labels={"x": "実測値", "y": "予測値"}
-            )
-            st.plotly_chart(fig, use_container_width=True)
+                # ログを記録
+                # add_row_to_gsheet(
+                #     gsheet_connector,
+                #     [
+                #         [
+                #             datetime.datetime.now(
+                #                 datetime.timezone(datetime.timedelta(hours=9))
+                #             ).strftime("%Y-%m-%d %H:%M:%S"),
+                #             "重回帰分析",
+                #             y_label,
+                #             "_".join(x_labels),
+                #         ]
+                #     ],
+                # )
+
+                # 結果の表示
+                coef = model_lr.coef_[0]
+                intercept = model_lr.intercept_[0]
+
+                ans = "##### " + y_label + " = "
+                for c, label in zip(coef, x_labels):
+                    ans += " **{:.2f}** x **{}の値** +".format(c, label)
+
+                # 切片を追記
+                if intercept > 0:
+                    ans += str(round(intercept, 3))
+                else:
+                    ans = ans[:-1] + "- " + str(round(abs(intercept), 3))
+                st.markdown(ans)
+
+                st.markdown("花子の他の測定値は以下の通り")
+                st.table(target_df)
+
+                st.markdown("上記の式に、データを当てはめると....")
+
+                pred_str = "##### " + y_label + " = "
+                pred_ans = 0
+                for c, label in zip(coef, x_labels):
+                    pred_str += " **{:.2f}** x **{}** +".format(
+                        c, target_df.at[0, label]
+                    )
+                    pred_ans += round(c, 3) * target_df.at[0, label]
+
+                # 切片を追記
+                if intercept > 0:
+                    pred_str += str(round(intercept, 3))
+                else:
+                    pred_str = pred_str[:-1] + "- " + str(round(abs(intercept), 3))
+
+                pred_ans += round(intercept, 3)
+
+                st.markdown(pred_str)
+                st.success("予測結果：" + str(round(pred_ans, 3)))
+
+                st.write("※ 決定係数： " + str(round(model_lr.score(X_train, y_train), 3)))
+
+                # グラフの描画
+                # plot_y = list(map(lambda y: y[0], y_pred))
+                # fig = px.scatter(
+                #     x=y_test[y_label].values, y=plot_y, labels={"x": "実測値", "y": "予測値"}
+                # )
+                # st.plotly_chart(fig, use_container_width=True)
 
 
 #### main contents
