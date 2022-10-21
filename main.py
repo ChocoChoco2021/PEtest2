@@ -64,7 +64,7 @@ def connect_to_gsheet():
 def add_row_to_gsheet(gsheet_connector, row):
     gsheet_connector.values().append(
         spreadsheetId=SHEET_ID,
-        range=f"{SHEET_NAME}!A:F",
+        range=f"{SHEET_NAME}!A:G",
         body=dict(values=row),
         valueInputOption="USER_ENTERED",
     ).execute()
@@ -196,6 +196,7 @@ def vis():
                     "散布図",
                     x_label,
                     y_label,
+                    coloring,
                 ]
             ],
         )
@@ -217,6 +218,7 @@ def vis():
                     st.session_state.username,
                     "ヒストグラム",
                     hist_val,
+                    "-",
                     "-",
                 ]
             ],
@@ -249,6 +251,7 @@ def vis():
                     st.session_state.username,
                     "箱ひげ図",
                     box_val_y,
+                    "-",
                     "-",
                 ]
             ],
@@ -319,6 +322,7 @@ def lr():
                         "単回帰分析",
                         y_label,
                         x_label,
+                        "-",                    
                     ]
                 ],
             )
@@ -403,6 +407,7 @@ def multi_lr():
                 #             "重回帰分析",
                 #             y_label,
                 #             "_".join(x_labels),
+#                 
                 #         ]
                 #     ],
                 # )
